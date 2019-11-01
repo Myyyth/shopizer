@@ -1,0 +1,81 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8u212-jdk-stretch
+      - image: circleci/mysql:5.7
+        environment:
+          - MYSQL_ROOT_PASSWORD=shopizer123
+          - MYSQL_DATABASE=SALESMANAGER
+          - MYSQL_USER=shopizer_db_user
+          - MYSQL_PASSWORD=shopizer_db_password
+          - "JAVA_OPTS=-Xms1024m -Xmx1024m"
+          - "db.driverClass=com.mysql.jdbc.Driver"
+          - "db.jdbcUrl=jdbc:mysql://localhost:3306/SALESMANAGER?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
+          - "db.user=shopizer_db_user"
+          - "db.password=shopizer_db_password"
+
+    filters:
+            branches:
+              only: master
+
+    working_directory: ~/shopizer
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+            - v1-dependencies-
+
+      - run:
+            name: Dockerize installation
+            command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+            environment:
+              DOCKERIZE_VERSION: v0.6.1
+
+      - run:
+            name: Waiting for MySQL
+            command: dockerize -wait tcp://localhost:3306 -timeout 1m
+
+      - run:
+            name: Installing application
+            command: mvn clean install
+
+      - run:
+            name: Running test
+            command: mvn test
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+      - run:
+            name: Installing dependencies
+            command: sudo apt-get update && sudo apt-get install python-pip -y
+      - run:
+            name: Installing AWS CLI
+            command: sudo pip install awscli
+      - deploy:
+            name: Deploying to AWS
+            command: aws s3 sync . s3://shopizer-devops/deployment/ --delete
+      - run:
+            name: Settings permissions
+            command: sudo chmod 600 shopizer.pem
+      - run:
+            name: Deploying to AWS
+            command: scp -o StrictHostKeyChecking=no -r -i shopizer.pem ~/shopizer ubuntu@18.232.95.170:/home/ubuntu/shopizer/
+      - run:
+            name: Removing old containers
+            command: ssh -i shopizer.pem ubuntu@18.232.95.170 'docker stop shopizer || true && docker rm shopizer || true'
+      - run:
+            name: Building new images
+            command: ssh -i shopizer.pem ubuntu@18.232.95.170 'docker build -t "shopizer" shopizer/sm-shop'
+      - run:
+            name: Starting new containers
+            command: ssh -i shopizer.pem ubuntu@18.232.95.170 'docker run -d -p 8080:8080 shopizer'
+      - run:
+            name: Clearing system
+            command: ssh -i shopizer.pem ubuntu@18.232.95.170 'docker system prune'
