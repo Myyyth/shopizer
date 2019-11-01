@@ -1,11 +1,6 @@
 FROM tomcat:8.5.40-jre8
-MAINTAINER shopizerecomm
 
 VOLUME /tmp
-
-# Diagnose and analyze potential db connection issue and log files
-#RUN apt-get update && apt-get install -y mysql-client
-#RUN apt-get update && apt-get install -y vim
 
 RUN apt-get update && \
     apt-get install -y \
@@ -13,8 +8,6 @@ RUN apt-get update && \
     	vim \
     && apt-get clean
 
-
-# Delete existing ROOT folder
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
 RUN mkdir -p /usr/local/tomcat/files
