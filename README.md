@@ -33,6 +33,7 @@ Installation process:
 3. In *.circleci* file change the username, ip, port (if different from default 22) in *Deploying to AWS* stage and the rest after that one
 4. Change *shopizer.pem* to the path to your SSH key
 5. Update the master branch, the rest is in the CircleCI dashboard
+6. After successful testing and deployment, application will be available at *IP*:8080
 
 Get the code:
 -------------------
