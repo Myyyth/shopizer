@@ -19,6 +19,20 @@ See the demo:
 -------------------
 http://demo.shopizer.com:8080
 
+Configuring pipeline:
+-------------------
+Prerequisites:
+- Forked GitHub repository
+- CircleCI account
+- Running server with JDK 8u212 and JRE (VERSION IS IMPORTANT!), Docker
+- SSH key for accessing remote server
+
+Installation process:
+1. Connect your repository to CircleCI account
+2. Change enviromental variables in *.circleci* file
+3. In *.circleci* file change the username, ip, port (if different from default 22) in *Deploying to AWS* stage and the rest after that one
+4. Change *shopizer.pem* to the path to your SSH key
+5. Update the master branch, the rest is in the CircleCI dashboard
 
 Get the code:
 -------------------
